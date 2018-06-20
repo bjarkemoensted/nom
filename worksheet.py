@@ -6,7 +6,7 @@ Created on Mon Jun 18 22:14:37 2018
 @author: ahura
 """
 
-from collections import defaultdict
+from collections import defaultdict as dd
 from openpyxl import load_workbook, worksheet
 
 # The cell describing the meal, e.g. "dinner saturday"
@@ -22,8 +22,9 @@ _n_peoplecell = "B5"
 first_ing_row = 13
 
 ingredient_col = "A"
-amount_col = "C"
-unit_col = "D"
+total_col = "D"
+unit_col = "E"
+descr_col = "F"
 
 def convert_units(amount, unit):
     if unit == "g":
@@ -32,15 +33,18 @@ def convert_units(amount, unit):
     return amount, unit
 
 def parse_spreadsheet(filename):
-    '''Takes the name of a worksheet file and parses it. Returns a tuple of
-    two dicts.
-    First one maps ingredients to dict like {"kg": 42} (units to quantities).
-    Second one maps ingredients to list of which dishes they're used in.'''
+    '''Takes the name of a worksheet file and parses it.
+    Returns dict mapping ingredients to
+    {'descriptions': [list of descriptions],
+    'quantities': {unit: amount}}'''
 
     # Initialize
     wb = load_workbook(filename=filename, data_only = True)
-    data = defaultdict(lambda: defaultdict(lambda: 0.0))
-    details = defaultdict(lambda: [])
+
+    data = dd(lambda: {'descriptions': [],
+                       'quantities': dd(lambda: 0.0)})
+#    data = defaultdict(lambda: defaultdict(lambda: 0.0))
+#    details = defaultdict(lambda: [])
 
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
@@ -49,9 +53,6 @@ def parse_spreadsheet(filename):
         print("Parsing sheet: %s. Recipe for %s (%s)"
               % (sheet_name, dish, meal))
 
-        # Extract the number of people who'll be eating this meal
-        n_people = ws[_n_peoplecell].value
-
         for i, row in enumerate(ws.iter_rows()):
             #  Skip rows until we hit the ingredient list
             row_num = i + 1
@@ -59,23 +60,33 @@ def parse_spreadsheet(filename):
                 continue
 
             # Extract ingredient, amount, and unit.
-            col2val = {c.column: c.value for c in row}
-            needed = (ingredient_col, amount_col, unit_col)
-            if any(c not in col2val or col2val[c] is None for c in needed):
+            col2val = {c.column: c.value for c in row if c.value is not None}
+            # Skip empty rows or rows containing name of a subdish
+#            if len(col2val) < 2:
+#                continue
+
+            # Update quantities
+            if ingredient_col not in col2val:
                 continue
             ingredient = col2val[ingredient_col]
-            amount_raw = n_people*col2val[amount_col]
-            unit_raw = col2val[unit_col]
-            amount, unit = convert_units(amount_raw, unit_raw)
+            # If there's a quantity, add it up
+            try:
+                amount = col2val[total_col]
+                unit_raw = col2val[unit_col] if unit_col in col2val else ""
+                amount, unit = convert_units(amount, unit_raw)
+                data[ingredient]['quantities'][unit] += amount
+            except KeyError:
+                pass
 
-            # Update data
-            data[ingredient][unit] += amount
-            detail = "%s (%s)" % (dish, meal)
-            details[ingredient].append(detail)
+            # Update descriptions
+            if descr_col not in col2val and ingredient not in data:
+                continue  # Skip if no quantity or description
+            detail = col2val[descr_col] if descr_col in col2val else "%s (%s)" % (dish, meal)
+            data[ingredient]['descriptions'].append(detail)
         #
 
-    return data, details
+    return data
 
 if __name__ == '__main__':
-    a, b = parse_spreadsheet("recipes.xlsx")
+    a = parse_spreadsheet("recipes.xlsx")
     print(a)

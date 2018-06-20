@@ -27,9 +27,13 @@ outname = os.path.join(cwd, "shopping_list.tex")
 
 # Generate TeX code for making the table
 texrows = []
-data, details = parse_spreadsheet(filename)
-for ingredient, amountdict in sorted(data.items(), key = lambda t: t[0]):
-    description = ", ".join(details[ingredient])
+data = parse_spreadsheet(filename)
+#data = parsed["quantities"]
+#details = parsed["descriptions"]
+for ingredient, stuff in sorted(data.items(), key = lambda t: t[0]):
+    amountdict = stuff["quantities"]
+    details = stuff["descriptions"]
+    description = ", ".join(details)
     quants = ", ".join([str(round(am, 2))+" "+un for un, am in amountdict.items()])
     cols = [ingredient, quants, description]
     line = u" & ".join(map(str, cols))
@@ -56,10 +60,12 @@ template = r'''
 \begin{document}
 \pagestyle{empty}
 \selectlanguage{danish}
-
-\begin{longtable}{p{0.25\textwidth}p{0.1\textwidth}p{0.65\textwidth}}
+\begin{center}
+\huge Food of doom
+\end{center}
+\begin{longtable}{ccp{8cm}}
 	\hline
-     \textbf{Ingrediens} & \textbf{kg} & \textbf{Retter} \\ \hline
+     \textbf{Ingredient} & \textbf{Amount} & \textbf{Details} \\ \hline
 	%PLACEHOLDER \\
 	\hline
 \end{longtable}
