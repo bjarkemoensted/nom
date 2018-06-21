@@ -15,21 +15,17 @@ import os
 import sys
 from subprocess import Popen
 
+# Make filename for output files
 cwd = os.path.dirname(os.path.realpath(__file__))
 filename = "recipes.xlsx"
 outname = os.path.join(cwd, "shopping_list.tex")
+txtname = os.path.join(cwd, "shopping_list.txt")
 
-
-
-#==============================================================================
-# Fedest. Autogenerer TeX-kode som kan lave en fin tabel.
-#==============================================================================
-
-# Generate TeX code for making the table
+# Read in data from spreadsheet
 texrows = []
 data = parse_spreadsheet(filename)
-#data = parsed["quantities"]
-#details = parsed["descriptions"]
+
+# Format into LaTeX table
 for ingredient, stuff in sorted(data.items(), key = lambda t: t[0]):
     amountdict = stuff["quantities"]
     details = stuff["descriptions"]
@@ -39,14 +35,15 @@ for ingredient, stuff in sorted(data.items(), key = lambda t: t[0]):
     line = u" & ".join(map(str, cols))
 
     texrows.append(line)
-
 table_contents = "\\\\ \\hline \n".join(texrows)
 
-#==============================================================================
-# TeX en indkøbsliste. Også grimt.
-#==============================================================================
+# Make plaintext version as well, in case things go awry
+plaintext = "\n".join(line.replace(" & ", ", ") for line in texrows)
+with open(txtname, "w", encoding="utf-8") as f:
+    f.write(plaintext)
+print("Saved plaintext.")
 
-# Inject into template content
+# LaTeX source to inject table code into
 template = r'''
 \documentclass[a4paper,10pt]{article}
 
@@ -72,15 +69,16 @@ template = r'''
 \end{document}
 '''
 
-tex_code = template.replace("%PLACEHOLDER", table_contents)#.encode("utf-8")
-
-# Compile it!
-with open(outname, "w") as f:
+# Generate a .tex file
+tex_code = template.replace("%PLACEHOLDER", table_contents)
+with open(outname, "w", encoding="utf-8") as f:
     f.write(tex_code)
 
+# Compile to pdf document
 DEVNULL = open(os.devnull, 'wb')
 process = Popen(['pdflatex', outname], stdout=DEVNULL, stderr=DEVNULL)
 process.communicate()  # Wait for process to finish
+print("Made pdf.")
 
 # Clean up
 remove_extensions = set(["log", "aux", "gz", "toc", "bbl", "blg", "tex"])
