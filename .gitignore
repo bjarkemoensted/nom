@@ -240,5 +240,5 @@ TSWLatexianTemp*
 
 # generated if using elsarticle.cls
 *.spl
-#recipes.txt
-#recipes.pdf
+example.txt
+example.pdf

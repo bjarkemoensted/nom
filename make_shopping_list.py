@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+Q: "Halp! What do?
+
+A: Run e.g. 'python make_shopping_list.py example.xlxs' from command line."
+
 Created on Wed Jan 11 15:46:23 2017
 
 @author: omd
