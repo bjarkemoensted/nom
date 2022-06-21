@@ -2,7 +2,7 @@
 # https://github.com/damnever/pigar
 
 # make_shopping_list.py: 12
-numpy == 1.13.1
+numpy == 1.22.0
 
 # worksheet.py: 10
 openpyxl == 2.5.3
